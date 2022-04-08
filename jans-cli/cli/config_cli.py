@@ -1335,7 +1335,7 @@ class JCA_CLI:
                 data.path = '/' + data.path
 
             if my_op_mode == 'scim':
-                data.path = data.path.replace('/', '.')
+                data.path = data.path.lstrip('/').replace('/', '.')
 
             body.append(data)
             selection = self.get_input(text='Another patch operation?', values=['y', 'n'])
