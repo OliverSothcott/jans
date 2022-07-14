@@ -33,7 +33,7 @@ Relevant Links:
 
 ### Objects
 
-Definitions of all objects used in the script
+Definitions of all objects used in the script.
 
 ## Common Use Cases
 
