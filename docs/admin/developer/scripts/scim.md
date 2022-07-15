@@ -54,7 +54,7 @@ These methods are called regardless of the API version used. Names are self expl
 
 Pre-resource modification methods return a boolean. A `False` value aborts the corresponding SCIM operation and a 500 error is returned. The same applies if the method execution crashes at runtime.
 
-Note that `update`* methods are called for both SCIM PUT and PATCH operations.
+Note that `update*` methods are called for both SCIM PUT and PATCH operations.
 
 **Post-resource Modification**
 
