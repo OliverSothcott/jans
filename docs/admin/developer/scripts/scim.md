@@ -107,8 +107,68 @@ Note that searching using the root `.search` SCIM endpoint will trigger calls to
 
 These are alternative methods that allow to tweak the response the service produces. They can be employed to introduce complex business rules when operations are executed.
 
-These methods are called if getApiVersion returns a number >= 5 (available in Gluu 4.3 onwards).
+These methods are called if `getApiVersion` returns a number >= 5 (available in Gluu 4.3 onwards).
 
+|Methods|
+|:---|
+|`manageResourceOperation`
+|`manageSearchOperation`
+
+[Later](#controlling-execution-of-scim-operations) we'll revisit the topic of access and provide concrete examples.
+
+## Developer's First Steps
+
+As with any other custom script in Gluu, SCIM scripts are run by the Jython engine. This allows usage of Python-style coding and leverages all the Java classes available in the SCIM web application classpath.
+
+To start, ensure SCIM service is running and a protection mode has been configured. Then in oxTrust enable the sample script:
+
+1. Navigate to `Configuration` > `Other custom Scripts` > `SCIM`
+
+2. Expand the only row (labeled `scim_event_handler`)
+
+3. Click on the `Enabled` check box
+
+4. Click on `update` at the bottom of the page
+
+<DIAGRAM GOES HERE>
+
+Inspect (`tail`) `scim_script.log`. After some seconds you'll see some lines related to script initialization, ie. method init being called. This means your script is active and properly running. Click [here](https://gluu.org/docs/gluu-server/4.3/user-management/scim2/#where-to-locate-scim-related-logs) to learn more about SCIM logs.
+
+Learning by doing is a good approach to scripting in Gluu. To start, edit the script by adding some `print` statements to the following methods: `createUser`, `postCreateUser`, `manageResourceOperation`. Save the script and check the log, wait until destroy and init are called.
+
+Send a user creation request to the service. [Here](https://gluu.org/docs/gluu-server/4.3/user-management/scim2/#creating-resources) is an example. Note the order in which your prints appear in the log.
+
+Delete the user created (whether via oxTrust or SCIM itself). Edit the `return` value for each of the three methods one by one and issue a creation request after every script update. Inspect the log output as well as the service outputs, namely, the HTTP responses.
+
+Now that you have got some acquaintance with the edit/test cycle, we can proceed with an example.
+  
+### Example: Modifying Search Results
+
+SCIM spec defines the concept of attribute returnability where some attributes should be never be part of a response (like passwords), always be returned (like resource identifiers), or be returned by default unless otherwise stated by the `excludedAttributes` parameter.
+
+Assume you are maintaining a user base of secret agents that work for your company and need to avoid exposing information such as their physical addresses for safety reasons. To keep it simple let's restrict the scope to user searches only. In practice you should take steps to hide this data on user retrieval and update.
+
+Let's alter `postSearchUsers`'s second parameter (`results`) to ensure addresses are not leaked:  
+  
+`  for user in results.getEntries():
+    user.setAttribute("oxTrustAddresses", None)`
+  
+This is very straightforward code except for the usage of `oxTrustAddresses`. Shouldn't it be simply `addresses` as the known SCIM attribute?
+
+Scripts work with entities that are about to be persisted or have already been saved so they kind of resemble the database structure (schema in LDAP terms). It turns out that database attribute names rarely match with SCIM names. An explanation of this fact can be found [here](https://gluu.org/docs/gluu-server/4.3/user-management/scim2/#how-is-scim-data-stored).
+
+While it is easy to know the SCIM name of a database attribute, the converse requires checking the code, however since you already have the skill this shouldn't be a problem: in [this](https://github.com/GluuFederation/scim/blob/version_4.3.0/scim-model/src/main/java/org/gluu/oxtrust/model/scim2/user/UserResource.java) Java class you'll find the representation of a user resource in SCIM spec terms. Pay attention to the `addresses` field and its associated `StoreReference` annotation that contains the attribute where addresses are actually stored.
+
+With that said, save your modifications. You may like the idea of adding some prints for enlightment like:
+  
+`print "%d entries returned of %d" % (results.getEntriesCount(), results.getTotalEntriesCount())
+for user in results.getEntries():
+    print "Flushing addresses for user %s" % getUid() 
+    user.setAttribute("oxTrustAddresses", None)`
+  
+Ensure no addresses are returned anymore in your SCIM user searches. Happy testing!
+
+### Controlling execution of SCIM operations
 
 ### Objects
 
