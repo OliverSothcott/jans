@@ -231,8 +231,102 @@ The strategy to implement segmentation is rather simple:
 
 - Make the HTTP header name be a configuration property of the script so that it is not hard-coded
 
-- Add a configuration property that contains the mapping of userType value vs. expected header value in JSON format
+- Add a configuration property that contains the mapping of `userType` value vs. expected header value in JSON format
 
-## Common Use Cases
+**Adding and parsing config properties**
+  
+In oxTrust expand the SCIM script and add properties:
+
+- `custom_header` with value `USER-SEGMENT-SECRET`
+- `access_map` with value `{ "<random_string>":"Contractor", "<random_string>":"Employee", "<random_string>":"Intern" }`
+  
+Save the changes.
+
+In the `init` method this properties should be parsed. To start, in the script context textarea let's add some imports:
+  
+`from org.gluu.oxtrust.ws.rs.scim2 import BaseScimWebService
+import json
+import sys `
+  
+Here is how `init` would look like:
+  
+`def init(self, configurationAttributes):
+    self.custom_header = configurationAttributes.get("custom_header").getValue2()
+    json = configurationAttributes.get("access_map").getValue2()    
+    self.access_map = json.loads(json)
+    print "ScimEventHandler (init): Initialized successfully"
+    return True`
+  
+Note no validations took place here: we assumed the script contains the properties, that they are non empty and have sensible values.
+
+**Allow/Deny resource operations**
+  
+The first step is to know the kind of application that is calling our service. For this purpose let's create a method that given incoming request headers returns the matching `userType`
+
+`# headers params is an instance of javax.ws.rs.core.MultivaluedMap<String, String>
+def getUserType(self, headers):
+    secret = headers.getFirst(self.custom_header)
+    if secret in self.access_map:
+       return self.access_map[secret]
+    else:
+       return None`
+  
+Now let's code `manageResourceOperation`. We should allow access only under the following conditions:
+
+- The `getUserType` method does not return `None`
+- The entity object (`ScimCustomPerson` instance) has a proper `userType` value. This means that for user creation, the incoming payload comes with a matching `userType` and for the other cases, the already stored attribute matches as well
+  
+Assume that if the operation invoked is not user-related, we should allow access freely. Here is how the implementation might look:
+  
+`def manageResourceOperation(self, context, entity, payload, configurationAttributes):
+
+    print "manageResourceOperation. SCIM endpoint invoked is %s (HTTP %s)" % (context.getPath(), context.getMethod()) 
+    if context.getResourceType() != "User":
+        return None
+
+    expected_user_type = self.getUserType(context.getRequestHeaders())
+
+    if expected_user_type != None and entity.getAttribute("oxTrustUserType") == expected_user_type:
+        return None
+    else:
+        return BaseScimWebService.getErrorResponse(403, None, "Attempt to handle a not allowed user type")  `
+  
+Note no usage of the payload took place. A case you may like to evaluate is where mistakenly using an update operation, the `userType` is set to an unexpected value.
+
+**Allow/Deny searches**
+  
+This time instead of inspecting an entity, we ought to make a filter expression to restrict the search when the database is queried. For your reference, a valid filter expression is for instance `userType eq "Contractor"`.
+  
+`def manageSearchOperation(self, context, searchRequest, configurationAttributes):
+
+    print "manageSearchOperation. SCIM endpoint invoked is %s (HTTP %s)" % (context.getPath(), context.getMethod())
+
+    resource_type = context.getResourceType()
+    print "manageSearchOperation. This is a search over %s resources" % resource_type
+
+    if resource_type != "User":
+        return None
+
+    expected_user_type = self.getUserType(context.getRequestHeaders())
+
+    if expected_user_type != None:
+        context.setFilterPrepend("userType eq \"%s\"" % expected_user_type)
+        return None
+    else:
+        return BaseScimWebService.getErrorResponse(403, None, "Attempt to handle a not allowed user type") 
+
+Recall this [method](https://gluu.org/docs/gluu-server/4.3/user-management/scim-scripting/#managesearchoperation) must return a `javax.ws.rs.core.Response`. A `None` value makes continue the operation processing normally.
+
+## Working with more than one script
+  
+You may have already noticed that in oxTrust it is possible to have several scripts under the SCIM tab. This is how execution takes place when there are several scripts enabled:
+
+The applicable method is called in the first script. If the return value was `True`, the method is called again but this time in the subsequent script. If at any point a `False` return value is encountered, the SCIM operation is aborted with error 500. This means that a normal operation execution requires all involved methods across different scripts to be successful.
+
+There is an important exception to the above and is related to the `manage*` methods. In this case, only one script takes effect (the first script found). Note that in most cases having a single SCIM script suffices for all needs. 
+  
+  
+  
+  ## Common Use Cases
 
 Descriptions of common use cases for this script, including a code snippet for each
