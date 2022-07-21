@@ -170,9 +170,68 @@ Ensure no addresses are returned anymore in your SCIM user searches. Happy testi
 
 ### Controlling execution of SCIM operations
 
-### Objects
+With the `manageResourceOperation` and `manageSearchOperation` methods you can make complex decisions on how processing should take place based on contextual data and the incoming payload.
 
-Definitions of all objects used in the script
+**manageResourceOperation**
+  
+This method is invoked when any following operations are executed: resource creation, modification, removal and retrieval by ID. In case of bulks, the method is called for every operation that fits into these categories.
+
+Parameters are described in the table below:
+  
+|Name|Description|Class/Link|
+|:---|:---|:---
+|`context`|Provides contextual information about the SCIM operation being called such as type of resource involved, HTTP verb, request headers, query params, etc.|[OperationContext](https://github.com/GluuFederation/scim/blob/version_4.3.0/scim-rest/src/main/java/org/gluu/oxtrust/service/external/OperationContext.java)
+|`entity`|An non-null object representing the resource involved|A descendant of [Entry](https://github.com/GluuFederation/oxOrm/blob/version_4.3.0/model/src/main/java/org/gluu/persist/model/base/Entry.java). If the resource is a user, it will be an instance of [ScimCustomPerson](https://github.com/GluuFederation/scim/blob/version_4.3.0/scim-model/src/main/java/org/gluu/oxtrust/model/scim/ScimCustomPerson.java). In case of a group, it will be a [GluuGroup](https://github.com/GluuFederation/oxTrust/blob/version_4.3.0/model/src/main/java/org/gluu/oxtrust/model/GluuGroup.java)
+|`payload`|The payload sent in the invocation; `null` when the operation is removal or retrieval by ID|The datatype depends on the operation called. Check the [interface](https://github.com/GluuFederation/scim/tree/version_4.3.0/scim-model/src/main/java/org/gluu/oxtrust/ws/rs/scim2) that suits best and inspect the first parameter's datatype. The class will belong to some subpackage inside [org.gluu.oxtrust.model.scim2](https://github.com/GluuFederation/scim/tree/version_4.3.0/scim-model/src/main/java/org/gluu/oxtrust/model/scim2)
+  
+This method is expected to return an instance of `javax.ws.rs.core.Response` that supersedes the output of the operation itself. In other words, the actual processing of the operation is skipped in favor of the code supplied here. However note that minor validations may take place in the payload before your code is actually called.
+
+Returning None transfers the control of the operation for normal processing (default Gluu implementation). If the method execution crashes at runtime, a 500 HTTP error is sent. 
+  
+**Notes:**
+ 
+- Possible values for `context.getResourceType()` are: User, Group, FidoDevice, Fido2Device
+- `context.getTokenDetails().getValue()` is a shortcut that will give you the access token the caller employed to issue the service call
+- Both `context.getTokenDetails().getTokenType()` and `context.getTokenDetails().getScope()` return non null values when the [protection mechanism](https://gluu.org/docs/gluu-server/4.3/user-management/scim2/#api-protection) of the API is OAuth or test mode
+- Note that for resource creation operation, `entity` basically contains the same data supplied in the POST `payload`. In this case, `entity` has not originated from the database and has not been persisted either
+- For the case of modification, retrieval and removal, `entity` contains the data currently stored in the database for the resource in question
+- Since many values come from Java code, you can always do `getClass().getName()` to get an idea of what type of variables you are dealing with
+- To build custom error responses your can reuse some of the `getErrorResponse` methods of class [BaseScimWebService](https://github.com/GluuFederation/scim/blob/version_4.3.0/scim-rest/src/main/java/org/gluu/oxtrust/ws/rs/scim2/BaseScimWebService.java)
+  
+This method offers a high degree of flexibility. Perform careful testing of your code and account all potential scenarios.
+  
+**manageSearchOperation**
+  
+This method is invoked when resource searches are performed. Parameters are described in the table below:
+
+|name|Description|Class/Link
+|:---|:----|:---
+|`context`|Provides contextual information about the SCIM operation being called such as type of resource involved, HTTP verb, request headers, query params, etc.|[OperationContext](https://github.com/GluuFederation/scim/blob/version_4.3.0/scim-rest/src/main/java/org/gluu/oxtrust/service/external/OperationContext.java)
+|`searchRequest`|An object representing the search parameters provided in the call (applies for both GET and POST)|[SearchRequest](https://github.com/GluuFederation/scim/blob/version_4.3.0/scim-model/src/main/java/org/gluu/oxtrust/model/scim2/SearchRequest.java)
+  
+Unlike `manageResourceOperation`, no `entity` parameter is passed. This is so because making decisions based on already executed searches would have a performance impact. Instead you can use `context.setFilterPrepend(...)` to help restrict the search against the database: here you can pass a String value that will be interpreted as an SCIM filter expression (see section 3.4.2.2 of RFC 7644). When the search being performed already contains a search filter (ie. `searchRequest.getFilter()`is non-empty), a new filter is created by appending both "subfilters" with an `and` operator.
+
+As in the case of `manageResourceOperation` this method is expected to return an instance of `javax.ws.rs.core.Response`.
+
+Returning `None` transfers the control of the operation for normal processing (the Gluu implementation). If the method execution crashes at runtime, a 500 HTTP error is sent.
+
+The same recommendations given for `manageResourceOperation` apply here. If you build filter expressions in your method, ensure they are syntactically valid to avoid your callers getting unexpected "invalidFilter" 400 errors.
+
+**Example: segmenting the user base**
+  
+Let's assume you make use of the SCIM attribute `userType` so that your user base is partitioned into three disjoint segments according to such attribute and you have designated its possible values to be: Contractor, Employee, or Intern.
+
+Suppose your company has three different applications that make management of users in every category, that is, only one application is devoted to manage contractors, another employees, and other interns. You are interested in consistently granting access so that no application can create, query or modify users that don't belong to its focus.
+
+To properly handle this multi-tenancy scenario, you decide to use the contextual information coming from every request to determine if the operation should be allowed or not. For this purpose you communicate every application developer to send an additional HTTP header in their call with a value that only you (the administrator) and the developer knows. Let's call it the "secret". For the sake of simplicity let's assume developers are external to the company and only you know their identities. They don't know each other so they cannot exchange secrets.
+
+The strategy to implement segmentation is rather simple:
+
+- Alter the default SCIM script by supplying a custom implementation for the methods that control execution
+
+- Make the HTTP header name be a configuration property of the script so that it is not hard-coded
+
+- Add a configuration property that contains the mapping of userType value vs. expected header value in JSON format
 
 ## Common Use Cases
 
