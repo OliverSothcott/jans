@@ -277,8 +277,9 @@ Now let's code `manageResourceOperation`. We should allow access only under the 
 - The entity object (`ScimCustomPerson` instance) has a proper `userType` value. This means that for user creation, the incoming payload comes with a matching `userType` and for the other cases, the already stored attribute matches as well
   
 Assume that if the operation invoked is not user-related, we should allow access freely. Here is how the implementation might look:
-  
-`def manageResourceOperation(self, context, entity, payload, configurationAttributes):
+
+<code>
+def manageResourceOperation(self, context, entity, payload, configurationAttributes):
 
     print "manageResourceOperation. SCIM endpoint invoked is %s (HTTP %s)" % (context.getPath(), context.getMethod()) 
     if context.getResourceType() != "User":
@@ -289,15 +290,19 @@ Assume that if the operation invoked is not user-related, we should allow access
     if expected_user_type != None and entity.getAttribute("oxTrustUserType") == expected_user_type:
         return None
     else:
-        return BaseScimWebService.getErrorResponse(403, None, "Attempt to handle a not allowed user type")  `
+        return BaseScimWebService.getErrorResponse(403, None, "Attempt to handle a not allowed user type")
   
-Note no usage of the payload took place. A case you may like to evaluate is where mistakenly using an update operation, the `userType` is set to an unexpected value.
+</code>
+
+<br/>Note no usage of the payload took place. A case you may like to evaluate is where mistakenly using an update operation, the `userType` is set to an unexpected value.
 
 **Allow/Deny searches**
   
 This time instead of inspecting an entity, we ought to make a filter expression to restrict the search when the database is queried. For your reference, a valid filter expression is for instance `userType eq "Contractor"`.
+
+  <code>
   
-`def manageSearchOperation(self, context, searchRequest, configurationAttributes):
+ def manageSearchOperation(self, context, searchRequest, configurationAttributes):
 
     print "manageSearchOperation. SCIM endpoint invoked is %s (HTTP %s)" % (context.getPath(), context.getMethod())
 
@@ -313,7 +318,9 @@ This time instead of inspecting an entity, we ought to make a filter expression 
         context.setFilterPrepend("userType eq \"%s\"" % expected_user_type)
         return None
     else:
-        return BaseScimWebService.getErrorResponse(403, None, "Attempt to handle a not allowed user type") 
+        return BaseScimWebService.getErrorResponse(403, None, "Attempt to handle a not allowed user type")
+  </code>
+
 
 Recall this [method](https://gluu.org/docs/gluu-server/4.3/user-management/scim-scripting/#managesearchoperation) must return a `javax.ws.rs.core.Response`. A `None` value makes continue the operation processing normally.
 
