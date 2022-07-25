@@ -2,7 +2,19 @@
 
 ## Overview
 
-Revoke Token scripts allow inject custom logic during token revoking.
+The Token Revocation extension defines a mechanism for clients to indicate to the authorization server that an access token is no longer needed. This is used to enable a "log out" feature in clients, allowing the authorization server to clean up any security credentials associated with the authorization.
+
+**Token Revocations**
+
+  Implementations MUST support the revocation of refresh tokens and SHOULD support the revocation of access tokens.
+
+   The client requests the revocation of a particular token by making an HTTP POST request to the token revocation endpoint URL.  This URL MUST conform to the rules given in RFC6749, Section 3.1. Clients MUST verify that the URL is an HTTPS URL.
+
+   The means to obtain the location of the revocation endpoint is out of the scope of this specification.  For example, the client developer may consult the server's documentation or automatic discovery may be used.  As this endpoint is handling security credentials, the endpoint location needs to be obtained from a trustworthy source.
+
+Since requests to the token revocation endpoint result in the transmission of plaintext credentials in the HTTP request, URLs for token revocation endpoints MUST be HTTPS URLs.  The authorization server MUST use Transport Layer Security (TLS) [RFC5246] in a version compliant with [RFC6749], Section 1.6.  Implementations MAY also support additional transport-layer security mechanisms that meet their security requirements.
+
+   If the host of the token revocation endpoint can also be reached over HTTP, then the server SHOULD also offer a revocation service at the corresponding HTTP URI, but it MUST NOT publish this URI as a token revocation endpoint.  This ensures that tokens accidentally sent over HTTP will be revoked.
 
 ## Interface
 
