@@ -36,7 +36,7 @@ If `run_introspection_script_before_access_token_as_jwt_creation_and_include_cla
 
 ### Role based Scopes
 
-Description: Adding User Role based Scopes to the token.
+#### Description: Adding User Role based Scopes to the token.
 Following sample code snippet can be used to add additional scopes to the token, based on user's role and roleScopeMapping from backend database.
 
     # Returns boolean, true - apply introspection method, false - ignore it.
