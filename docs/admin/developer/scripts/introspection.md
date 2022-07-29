@@ -22,7 +22,7 @@ The introspection interception script extends the base script type with the meth
 - `destroy`
 - `getApiVersion` 
 
-It also adds the `modifyResponse` method:
+It also adds the `modifyResponse` method.
 
 | Method | Method description |
 |:-----|:------|
