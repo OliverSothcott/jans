@@ -2,13 +2,18 @@
 
 ## Overview
 
-End Session scripts allows to modify HTML response for Frontchannel logout [(spec)](https://openid.net/specs/openid-connect-frontchannel-1_0.html)
+End Session scripts allows you to modify the HTML response for a Frontchannel logout [(spec)](https://openid.net/specs/openid-connect-frontchannel-1_0.html)
 
 ## Interface
 
 ### Methods
 
-The End Session interception script extends the base script type with the `init`, `destroy` and `getApiVersion` methods but also adds the following method(s):
+The End Session interception script extends the base script type with:-
+- `init`, 
+- `destroy`,
+- `getApiVersion` methods.
+
+There is a further method, `context` that is also available:
 
 |Method|def getFrontchannelHtml(self, context)|
 |:---|:---|
