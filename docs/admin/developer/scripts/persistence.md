@@ -13,7 +13,9 @@ Allows administrators to specify the hashing algorithm employed to encode users'
 |Description| Given a password, it must return its hashed repesentation as a `string`
 |Method Parameter| `credential` is `string`
 
-For implementation, method `createStoragePassword(String, PasswordEncryptionMethod`) of utility class `PasswordEncryptionHelper` can be useful here. The enumeration `PasswordEncryptionMethod` already provides a numerous list of encryption alternatives.
+For an implementation the method:-
+- `createStoragePassword(String, PasswordEncryptionMethod`) of utility class `PasswordEncryptionHelper` can be useful here. 
+- The enumeration `PasswordEncryptionMethod` already provides a numerous list of encryption alternatives.
 
 
 |Method |`def compareHashedPasswords(self, credential, storedCredential)`|
