@@ -6,7 +6,7 @@
 
 ## Interface
 
-In order to be run and Introspection script should be associated with an OpenID Client (used for obtaining the token). Another way of doing this is by setting the `introspectionScriptBackwardCompatibility` global Auth Server JSON Configuration Property to true. In this case the Auth Server will run all scripts and will do so by ignoring client configuration.
+
 
 ### Methods
 
