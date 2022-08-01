@@ -2,17 +2,24 @@
 
 ## Overview
 
-The Authorization Server Metadata spec (also known as OAuth Discovery) defines a format for clients to use to look up the information needed to interact with a particular OAuth server. This includes things like finding the authorization endpoint, and listing the supported scopes and client authentication mechanisms.
+The Authorization Server Metadata spec (also known as OAuth Discovery) defines a format for clients to use to look up the information needed to interact with a particular OAuth server. This includes things like:-
+- finding the authorization endpoint,
+- listing the supported scopes and client authentication mechanisms.
 
-The ["OpenID Connect Discovery 1.0"](https://openid.net/specs/openid-connect-discovery-1_0.html) defines the metadata in a way that is compatible with OpenID Connect Discovery while being applicable to a wider set of OAuth 2.0 use cases.  
+The ["OpenID Connect Discovery 1.0"](https://openid.net/specs/openid-connect-discovery-1_0.html) defines the metadata in such a way that is compatible with OpenID Connect Discovery while being applicable to a wider set of OAuth 2.0 use cases.  
 
-This is intentionally parallel to the way that ["OAuth 2.0 Dynamic Client Registration Protocol" RFC7591](https://datatracker.ietf.org/doc/html/rfc8414) defines the dynamic client registration mechanisms "OpenID Connect Dynamic Client Registration 1.0 OpenID.Registration in such a way that is compatible with it.
+This is intentionally parallel to the way that ["OAuth 2.0 Dynamic Client Registration Protocol" RFC7591](https://datatracker.ietf.org/doc/html/rfc8414) defines the dynamic client registration mechanisms "OpenID Connect Dynamic Client Registration 1.0 OpenID.Registration so that is compatible with it.
 
-The metadata for an authorization server is retrieved from a well- known location as a JSON [RFC8259](https://datatracker.ietf.org/doc/html/rfc8259) document, which declares its endpoint locations and authorization server capabilities.
+The metadata for an authorization server is retrieved from a know location as a JSON object [RFC8259](https://datatracker.ietf.org/doc/html/rfc8259) , which defines its endpoint locations and authorization server capabilities.
 
-This metadata can be communicated either in a self-asserted fashion by the server origin via HTTPS or as a set of signed metadata values represented as claims in a JSON Web Token [JWT](https://www.rfc-editor.org/info/rfc7519).  In the JWT case, the issuer is vouching for the validity of the data about the authorization server.  This is analogous to the role that the Software Statement plays in OAuth Dynamic Client Registration RFC7591.
+This metadata can be passed either:-
+- in a self-asserted fashion from the server origin via HTTPS 
+- or as a set of signed metadata values represented as claims in a JSON Web Token [JWT](https://www.rfc-editor.org/info/rfc7519).  
 
-The means by which the client chooses an authorization server is out of scope.  In some cases, its issuer identifier may be manually configured into the client.  In other cases, it may be dynamically discovered, for instance, through the use of [WebFinger](https://datatracker.ietf.org/doc/html/rfc7033).
+In the JWT case, the issuer is vouching for the validity of the data coming from the authorization server.  This is analogous to the role that the Software Statement plays in OAuth Dynamic Client Registration RFC7591.
+
+**Note:** The means by which the client chooses an authorization server is out of scope.  In some cases, the issuer identifier may be manually configured into the client.  In other cases, it may be dynamically discovered, for instance, through the use of [WebFinger](https://datatracker.ietf.org/doc/html/rfc7033).
+
 ## Interface
 
 
