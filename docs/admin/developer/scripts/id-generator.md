@@ -18,7 +18,7 @@ This script type adds only one method to the base script type:
 |:---|:---|
 |Method Parameter|`appId` is application ID <br/>`idType` is ID Type <br/> `idPrefix` is ID Prefix <br/>`user` is `org.gluu.oxtrust.model.GluuCustomPerson` <br/> `configurationAttributes` is `java.util.Map<String, SimpleCustomProperty>`
 
-This script can be used in an oxTrust application only.
+**Note:** This script can be used in an oxTrust application only.
 
 - [Sample ID Generation Script](https://gluu.org/docs/gluu-server/4.3/admin-guide/sample-id-generation-script.py)
 
